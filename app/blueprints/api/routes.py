@@ -1,6 +1,6 @@
 from . import bp as api
 from app.models import *
-from flask import make_response, request, abort
+from flask import make_response, request, abort, g
 from app.blueprints.auth.authy import token_auth
 from helpers import require_admin
 
@@ -61,6 +61,9 @@ def post_book():
     post_data = request.get_json()
     book = Book(**post_data)
     book.save()
+    user = User.query.get(book.user_id)
+    user.books.append(book)
+    user.save()
     return make_response(f'Book Id: {book.id} has been created', 200)
 
 @api.put('/book/<int:id>')
@@ -71,6 +74,8 @@ def put_book(id):
     book = Book.query.get(id)
     if not book:
         abort(404)
+    if not book.user.id == g.current_user.id:
+        abort(403)
     book.from_dict(put_data)
     book.save()
     return make_response(f'Book Id: {book.id} has been changed', 200)
@@ -82,5 +87,7 @@ def delete_book(id):
     book = Book.query.get(id)
     if not book:
         abort(404)
+    if not book.user.id == g.current_user.id:
+        abort(403)
     book.delete()
     return make_response(f'Book Id: {id} has been deleted', 200)
