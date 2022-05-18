@@ -3,6 +3,7 @@ from app.models import *
 from flask import make_response, request, abort, g
 from app.blueprints.auth.authy import token_auth
 from helpers import require_admin
+from flask_login import current_user
 
 @api.get('/user')
 def get_all_users():
@@ -11,8 +12,6 @@ def get_all_users():
     return make_response({"users": users},200)
 
 @api.post('/user')
-@token_auth.login_required()
-@require_admin
 def post_user():
     post_data = request.get_json()
     user = User(**post_data)
@@ -74,8 +73,6 @@ def put_book(id):
     book = Book.query.get(id)
     if not book:
         abort(404)
-    if not book.user.id == g.current_user.id:
-        abort(403)
     book.from_dict(put_data)
     book.save()
     return make_response(f'Book Id: {book.id} has been changed', 200)
@@ -87,7 +84,5 @@ def delete_book(id):
     book = Book.query.get(id)
     if not book:
         abort(404)
-    if not book.user.id == g.current_user.id:
-        abort(403)
     book.delete()
     return make_response(f'Book Id: {id} has been deleted', 200)
